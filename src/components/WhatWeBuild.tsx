@@ -3,27 +3,84 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FileCode2,
-  Layers,
+  Server,
+  ShieldCheck,
   Bot,
   BarChart3,
+  KeyRound,
+  Activity,
+  FileCode2,
+  Layers,
+  Cpu,
   Coins,
-  ShieldCheck,
-  Building2,
   Rocket,
+  Building2,
+  BarChart2,
 } from "lucide-react";
 import SectionHeading from "./SectionHeading";
+import type { LucideIcon } from "lucide-react";
 
 type Audience = "enterprise" | "startups";
 
-const services = [
+interface Service {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  keywords: string[];
+}
+
+const enterprise: Service[] = [
+  {
+    icon: Server,
+    title: "Distributed Systems",
+    description:
+      "High-availability architectures built for scale — fault-tolerant, audited, and production-hardened.",
+    keywords: ["Rust", "Go", "Kubernetes", "Terraform"],
+  },
+  {
+    icon: ShieldCheck,
+    title: "Compliance Middleware",
+    description:
+      "Regulatory screening, audit trails, and policy enforcement layers that sit between your systems and institutional requirements.",
+    keywords: ["KYC/AML", "Merkle Verification", "SOC 2"],
+  },
+  {
+    icon: Bot,
+    title: "AI Agents & Automation",
+    description:
+      "Autonomous decision engines that execute complex operational strategies — optimization, rebalancing, and real-time response.",
+    keywords: ["Python", "LangChain", "ML Pipelines"],
+  },
+  {
+    icon: BarChart3,
+    title: "Data Pipelines & Analytics",
+    description:
+      "Event streaming, indexing, and ML-driven risk models powering real-time operational intelligence.",
+    keywords: ["Kafka", "PyTorch", "PostgreSQL", "ClickHouse"],
+  },
+  {
+    icon: KeyRound,
+    title: "Identity & Access Systems",
+    description:
+      "Credential management, role-based access, and zero-trust architecture for regulated environments.",
+    keywords: ["OAuth", "SSO", "RBAC", "MFA"],
+  },
+  {
+    icon: Activity,
+    title: "Risk Engineering",
+    description:
+      "Real-time monitoring, anomaly detection, and automated response systems for high-stakes operations.",
+    keywords: ["Prometheus", "Grafana", "Custom Alerting"],
+  },
+];
+
+const startups: Service[] = [
   {
     icon: FileCode2,
     title: "Smart Contract Systems",
     description:
       "Production-grade contracts for DeFi, NFTs, and governance. Audited, gas-optimized, and battle-tested.",
     keywords: ["Solidity", "Rust", "Anchor", "Foundry"],
-    audience: ["enterprise", "startups"] as Audience[],
   },
   {
     icon: Layers,
@@ -31,23 +88,13 @@ const services = [
     description:
       "Vaults, AMMs, lending protocols, and staking mechanisms across EVM and Solana ecosystems.",
     keywords: ["EVM", "Solana", "Cross-chain"],
-    audience: ["startups"] as Audience[],
   },
   {
-    icon: Bot,
+    icon: Cpu,
     title: "AI Agents & Onchain Automation",
     description:
       "Autonomous systems that execute onchain strategies — yield optimization, rebalancing, liquidation protection.",
     keywords: ["Python", "LangChain", "ML Pipelines"],
-    audience: ["enterprise", "startups"] as Audience[],
-  },
-  {
-    icon: BarChart3,
-    title: "Data Pipelines & Analytics",
-    description:
-      "Indexing, oracles, and ML-driven risk models that give protocols real-time intelligence.",
-    keywords: ["TheGraph", "Helius", "PyTorch"],
-    audience: ["enterprise"] as Audience[],
   },
   {
     icon: Coins,
@@ -55,22 +102,29 @@ const services = [
     description:
       "Mechanism design, tokenomics modeling, and agent-based simulation for sustainable protocol economies.",
     keywords: ["cadCAD", "Agent-based Models"],
-    audience: ["startups"] as Audience[],
   },
   {
-    icon: ShieldCheck,
-    title: "Compliance & Security",
+    icon: Rocket,
+    title: "Launch Infrastructure",
     description:
-      "Audit, screening, and regulatory middleware — the intelligent airlock between DeFi and institutions.",
-    keywords: ["Merkle Verification", "KYC/AML"],
-    audience: ["enterprise"] as Audience[],
+      "Token launches, liquidity bootstrapping, vesting contracts, and distribution pipelines — from testnet to mainnet.",
+    keywords: ["Solana", "EVM", "Merkle Distributors"],
+  },
+  {
+    icon: BarChart2,
+    title: "Indexing & Protocol Analytics",
+    description:
+      "Custom subgraphs, real-time dashboards, and on-chain data pipelines so your team sees everything.",
+    keywords: ["TheGraph", "Helius", "Dune", "Flipside"],
   },
 ];
+
+const serviceMap: Record<Audience, Service[]> = { enterprise, startups };
 
 export default function WhatWeBuild() {
   const [active, setActive] = useState<Audience>("enterprise");
 
-  const filtered = services.filter((s) => s.audience.includes(active));
+  const cards = serviceMap[active];
 
   return (
     <section id="services" className="relative py-28 md:py-36">
@@ -78,86 +132,40 @@ export default function WhatWeBuild() {
         <SectionHeading
           label="Services"
           title="What We Build"
-          description="End-to-end engineering for protocols at every stage — from mechanism design through production deployment."
+          description="Same team, same skills — two different front doors. Pick the lens that fits your world."
         />
 
-        {/* Audience toggle buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-14">
+        {/* Audience pill toggle */}
+        <div className="relative inline-flex items-center gap-1 p-1 rounded-full bg-card border border-edge mb-14">
           <button
             onClick={() => setActive("enterprise")}
-            className={`group relative flex-1 max-w-sm flex items-center gap-5 p-6 rounded-xl border transition-all duration-300 cursor-pointer ${
-              active === "enterprise"
-                ? "bg-card border-accent shadow-[0_0_30px_rgba(33,118,255,0.1)]"
-                : "bg-card/50 border-edge hover:border-edge-light hover:bg-card"
+            className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer ${
+              active === "enterprise" ? "text-white" : "text-muted hover:text-heading"
             }`}
           >
-            <div
-              className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors duration-300 ${
-                active === "enterprise"
-                  ? "bg-accent text-white"
-                  : "bg-accent-glow text-accent"
-              }`}
-            >
-              <Building2 size={22} />
-            </div>
-            <div className="text-left">
-              <span
-                className={`font-display font-bold text-lg transition-colors duration-200 ${
-                  active === "enterprise" ? "text-heading" : "text-body"
-                }`}
-              >
-                Enterprise
-              </span>
-              <p className="text-xs text-muted mt-0.5">
-                Institutional-grade infrastructure & compliance
-              </p>
-            </div>
-            {active === "enterprise" && (
-              <motion.div
-                layoutId="activeIndicator"
-                className="absolute inset-0 rounded-xl border-2 border-accent pointer-events-none"
-                transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-              />
-            )}
+            <Building2 size={16} />
+            Enterprise
           </button>
-
           <button
             onClick={() => setActive("startups")}
-            className={`group relative flex-1 max-w-sm flex items-center gap-5 p-6 rounded-xl border transition-all duration-300 cursor-pointer ${
-              active === "startups"
-                ? "bg-card border-accent-alt shadow-[0_0_30px_rgba(0,229,160,0.08)]"
-                : "bg-card/50 border-edge hover:border-edge-light hover:bg-card"
+            className={`relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer ${
+              active === "startups" ? "text-white" : "text-muted hover:text-heading"
             }`}
           >
-            <div
-              className={`flex items-center justify-center w-12 h-12 rounded-xl transition-colors duration-300 ${
-                active === "startups"
-                  ? "bg-accent-alt text-surface"
-                  : "bg-accent-glow text-accent"
-              }`}
-            >
-              <Rocket size={22} />
-            </div>
-            <div className="text-left">
-              <span
-                className={`font-display font-bold text-lg transition-colors duration-200 ${
-                  active === "startups" ? "text-heading" : "text-body"
-                }`}
-              >
-                Startups
-              </span>
-              <p className="text-xs text-muted mt-0.5">
-                Ship fast with battle-tested Web3 engineering
-              </p>
-            </div>
-            {active === "startups" && (
-              <motion.div
-                layoutId="activeIndicator"
-                className="absolute inset-0 rounded-xl border-2 border-accent-alt pointer-events-none"
-                transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
-              />
-            )}
+            <Rocket size={16} />
+            Startups
           </button>
+          <motion.div
+            layoutId="pillHighlight"
+            className={`absolute top-1 bottom-1 rounded-full ${
+              active === "enterprise" ? "bg-accent" : "bg-accent-alt"
+            }`}
+            style={{
+              left: active === "enterprise" ? 4 : "50%",
+              right: active === "enterprise" ? "50%" : 4,
+            }}
+            transition={{ type: "spring", bounce: 0.15, duration: 0.45 }}
+          />
         </div>
 
         {/* Animated cards */}
@@ -176,7 +184,7 @@ export default function WhatWeBuild() {
             }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
-            {filtered.map((service) => (
+            {cards.map((service) => (
               <motion.div
                 key={service.title}
                 variants={{

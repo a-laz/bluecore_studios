@@ -1,8 +1,79 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import ParticleCanvas from "./ParticleCanvas";
+import DataStream from "./DataStream";
+
+const WORDS = ["Blink.", "Break.", "Bend.", "Sleep.", "Lie."];
+const TYPE_SPEED = 104;
+const HOLD_DURATION = 2860;
+const DELETE_SPEED = 65;
+
+function RotatingWord({ delay = 0 }: { delay?: number }) {
+  const [index, setIndex] = useState(0);
+  const [displayed, setDisplayed] = useState("");
+  const [phase, setPhase] = useState<"waiting" | "typing" | "holding" | "deleting">("waiting");
+
+  // Initial delay before starting
+  useEffect(() => {
+    const timeout = setTimeout(() => setPhase("typing"), delay);
+    return () => clearTimeout(timeout);
+  }, [delay]);
+
+  // Typing phase
+  useEffect(() => {
+    if (phase !== "typing") return;
+    const word = WORDS[index];
+    if (displayed.length >= word.length) {
+      setPhase("holding");
+      return;
+    }
+    const timeout = setTimeout(
+      () => setDisplayed(word.slice(0, displayed.length + 1)),
+      TYPE_SPEED
+    );
+    return () => clearTimeout(timeout);
+  }, [phase, displayed, index]);
+
+  // Hold phase
+  useEffect(() => {
+    if (phase !== "holding") return;
+    const timeout = setTimeout(() => setPhase("deleting"), HOLD_DURATION);
+    return () => clearTimeout(timeout);
+  }, [phase]);
+
+  // Deleting phase
+  useEffect(() => {
+    if (phase !== "deleting") return;
+    if (displayed.length === 0) {
+      setIndex((prev) => (prev + 1) % WORDS.length);
+      setPhase("typing");
+      return;
+    }
+    const timeout = setTimeout(
+      () => setDisplayed(displayed.slice(0, -1)),
+      DELETE_SPEED
+    );
+    return () => clearTimeout(timeout);
+  }, [phase, displayed]);
+
+  const showCursor = phase !== "waiting";
+
+  return (
+    <span className="gradient-text">
+      {displayed}
+      {showCursor && (
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.45, repeat: Infinity, repeatType: "reverse" }}
+          className="inline-block w-[3px] h-[0.85em] bg-accent align-middle ml-0.5 -mb-0.5"
+        />
+      )}
+    </span>
+  );
+}
 
 export default function Hero() {
   return (
@@ -24,6 +95,9 @@ export default function Hero() {
         }}
       />
 
+      {/* Data stream — desktop only */}
+      <DataStream />
+
       {/* Particle network */}
       <ParticleCanvas />
 
@@ -37,7 +111,7 @@ export default function Hero() {
         >
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-edge text-xs font-mono text-muted tracking-wide">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-alt animate-pulse" />
-            Web3 Infrastructure &middot; AI Solutions &middot; DeFi Engineering
+            Real-Time Systems &middot; Compliance Infrastructure &middot; Risk Engineering
           </span>
         </motion.div>
 
@@ -47,9 +121,9 @@ export default function Hero() {
           transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="font-display font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-heading leading-[1.1] tracking-tight"
         >
-          Infrastructure for the
+          We Build Infrastructure
           <br />
-          <span className="gradient-text">Onchain Intelligence</span> Era
+          That Doesn&apos;t <RotatingWord delay={1100} />
         </motion.h1>
 
         <motion.p
@@ -58,8 +132,8 @@ export default function Hero() {
           transition={{ duration: 0.7, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="mt-6 mx-auto max-w-2xl text-base sm:text-lg text-body leading-relaxed"
         >
-          We build DeFi protocols, AI&#8209;powered risk systems, and the
-          compliance middleware that connects them to institutional capital.
+          We engineer the backend systems, compliance layers, and data
+          infrastructure that regulated industries actually trust.
         </motion.p>
 
         <motion.div
