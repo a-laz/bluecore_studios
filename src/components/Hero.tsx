@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import ParticleCanvas from "./ParticleCanvas";
 import DataStream from "./DataStream";
+import {
+  SiAmazonwebservices,
+  SiGoogle,
+  SiStripe,
+  SiShopify,
+  SiSlack,
+} from "react-icons/si";
 
 const WORDS = ["Blink.", "Break.", "Bend.", "Sleep.", "Lie."];
 const TYPE_SPEED = 104;
@@ -159,25 +166,39 @@ export default function Hero() {
             See Our Work
           </a>
         </motion.div>
+
+        {/* Trusted By */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-16"
+        >
+          <p className="text-sm text-muted italic tracking-wide">
+            Trusted by{" "}
+            <span className="text-accent-alt font-bold not-italic">20+</span>{" "}
+            tech companies &amp; startups
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+            {[
+              { Icon: SiAmazonwebservices, label: "AWS" },
+              { Icon: SiGoogle, label: "Google" },
+              { Icon: SiStripe, label: "Stripe" },
+              { Icon: SiShopify, label: "Shopify" },
+              { Icon: SiSlack, label: "Slack" },
+            ].map(({ Icon, label }) => (
+              <Icon
+                key={label}
+                aria-label={label}
+                size={24}
+                className="text-heading opacity-60 hover:opacity-100 transition-opacity duration-300"
+              />
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-      >
-        <span className="text-[11px] font-mono text-dim uppercase tracking-widest">
-          Scroll
-        </span>
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ChevronDown size={16} className="text-dim" />
-        </motion.div>
-      </motion.div>
+
     </section>
   );
 }
