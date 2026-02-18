@@ -7,38 +7,38 @@ import { useState } from "react";
 
 const teamMembers = [
   {
+    name: "Vladislav Kuznetsov",
+    initials: "VK",
+    image: "/images/team/vlad.png",
+    role: "ML Engineer & Data Scientist",
+    bio: "Machine learning engineer with deep expertise in predictive modeling, NLP, and computer vision. Builds the data pipelines and ML infrastructure that power Bluecore's analytics — from risk scoring models to retention-driven insights. Turns complex datasets into actionable strategy using transfer learning, hyperparameter tuning, and scalable cloud workflows.",
+    skills: ["Machine Learning", "Deep Learning / NLP", "Python / TensorFlow", "AWS / PySpark"],
+    social: {
+      github: "https://github.com",
+      twitter: "https://x.com",
+      linkedin: "https://linkedin.com",
+    },
+  },
+  {
+    name: "Robert J Taylor",
+    initials: "RT",
+    image: "/images/team/rob.jpeg",
+    role: "GTM & Frontend Developer",
+    bio: "Bridges the gap between product and market at Bluecore. Top investor at Fiddeum with a sharp eye for Web3 opportunities, paired with hands-on frontend development skills to ship user-facing interfaces. Drives go-to-market strategy while building the experiences users actually interact with.",
+    skills: ["Go-to-Market Strategy", "Frontend Development", "Web3 Investing", "Fiddeum"],
+    social: {
+      github: "https://github.com",
+      twitter: "https://x.com",
+      linkedin: "https://linkedin.com",
+    },
+  },
+  {
     name: "Alex Lazarev",
     initials: "AL",
     image: "/images/team/Alex.jpg",
-    role: "Founder & Lead Engineer",
-    bio: "Saw the institutional compliance gap in DeFi firsthand and founded Bluecore to build the infrastructure that bridges it. Hands-on engineer specializing in DeFi infrastructure, compliance middleware, Rust, and Solana — not a manager who stopped coding.",
-    skills: ["DeFi Infrastructure", "Compliance Middleware", "Rust", "Solana"],
-    social: {
-      github: "https://github.com",
-      twitter: "https://x.com",
-      linkedin: "https://linkedin.com",
-    },
-  },
-  {
-    name: "Team Member 2",
-    initials: "TM",
-    image: "/images/team/rob.jpeg",
-    role: "Senior Engineer",
-    bio: "Placeholder bio for team member. Deep expertise in AI/ML systems, smart contract development, and protocol architecture. Passionate about building scalable infrastructure for the next generation of DeFi.",
-    skills: ["AI/ML", "Smart Contracts", "Protocol Architecture", "Scalability"],
-    social: {
-      github: "https://github.com",
-      twitter: "https://x.com",
-      linkedin: "https://linkedin.com",
-    },
-  },
-  {
-    name: "Team Member 3",
-    initials: "TM",
-    image: "/images/team/vlad.png",
-    role: "Senior Engineer",
-    bio: "Placeholder bio for team member. Specialized in security audits, cryptographic systems, and onchain governance mechanisms. Focused on building trustless and verifiable systems.",
-    skills: ["Security Audits", "Cryptography", "Governance", "Verification"],
+    role: "Lead AI Product Developer",
+    bio: "Builds agentic DeFi systems that turn complex on-chain strategies into simple savings products for everyday users. Ships multi-agent architectures, smart routing across DeFi protocols, and risk-aware portfolio copilots in Python, React, and Rust. 10+ years operating real-world businesses now applied to crypto. An engineer and operator who thinks in UX, risk, and trust.",
+    skills: ["Agentic AI / DeFi", "Rust / Python / React", "Multi-Agent Systems", "Crypto Infrastructure"],
     social: {
       github: "https://github.com",
       twitter: "https://x.com",
@@ -76,7 +76,7 @@ function TeamMemberCard({ member }: { member: typeof teamMembers[0] }) {
                 alt={member.name}
                 className="w-full h-full object-cover"
                 style={{
-                  objectPosition: member.name === "Team Member 3" ? "center top" : "center center",
+                  objectPosition: member.name === "Vladislav Kuznetsov" ? "center top" : "center center",
                 }}
                 onError={() => setImageError(true)}
               />
