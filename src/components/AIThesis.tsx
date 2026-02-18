@@ -29,29 +29,29 @@ export default function AIThesis() {
             </div>
 
             <h2 className="font-display font-bold text-3xl md:text-4xl lg:text-5xl text-heading leading-tight mb-8">
-              Where AI Meets Onchain
+              Where AI Meets Critical Infrastructure
             </h2>
           </AnimateIn>
 
           <AnimateIn delay={0.1}>
             <div className="space-y-6 text-body leading-[1.8]">
               <p>
-                The next wave of DeFi won&apos;t be built by humans alone.
-                Autonomous AI agents will manage onchain capital at scale —
-                optimizing yields across protocols, rebalancing positions in
-                real-time, and executing liquidation protection strategies faster
-                than any trading desk.
+                The next generation of operational systems won&apos;t be built
+                by humans alone. Autonomous AI agents will manage complex
+                workflows at scale — optimizing resource allocation, rebalancing
+                risk in real-time, and executing response strategies faster than
+                any operations team.
               </p>
 
               <p>
                 But autonomy without accountability is a non-starter for
-                institutional capital. The missing piece is{" "}
+                regulated industries. The missing piece is{" "}
                 <span className="text-heading font-medium">
-                  verifiable inference
+                  verifiable decision-making
                 </span>{" "}
-                — the ability to prove AI decisions onchain, creating an
-                auditable trail that satisfies both protocol governance and
-                regulatory frameworks.
+                — the ability to prove why an AI system did what it did,
+                creating an auditable trail that satisfies both internal
+                governance and regulatory frameworks.
               </p>
 
               <motion.blockquote
@@ -62,27 +62,27 @@ export default function AIThesis() {
                 className="my-8 pl-6 border-l-2 border-accent"
               >
                 <p className="text-lg text-heading font-display font-medium leading-relaxed italic">
-                  &ldquo;Institutional money can&apos;t enter DeFi without an
-                  intelligent airlock layer — ML-driven compliance and risk
-                  scoring as middleware between open protocols and regulated
-                  capital.&rdquo;
+                  &ldquo;Regulated capital can&apos;t flow through systems it
+                  can&apos;t audit. ML-driven compliance and risk scoring must
+                  sit as middleware between intelligent automation and
+                  institutional oversight.&rdquo;
                 </p>
               </motion.blockquote>
 
               <p>
-                Real-world asset tokenization is the bridge. AI handles the
-                underwriting, monitoring, and risk assessment. Smart contracts
-                handle the settlement, custody, and distribution. Together, they
-                create financial infrastructure that is simultaneously more
-                transparent than traditional finance and more compliant than
-                current DeFi.
+                Real-time data is the bridge. AI handles the underwriting,
+                monitoring, and risk assessment. Deterministic systems handle
+                settlement, custody, and enforcement. Together, they create
+                operational infrastructure that is simultaneously more
+                transparent than legacy systems and more compliant than current
+                automation.
               </p>
 
               <p>
                 We build at this intersection — not because it&apos;s
                 trendy, but because it&apos;s where the actual value creation
                 happens. The teams that understand both the AI stack and the
-                onchain stack will define the next decade of financial
+                systems layer will define the next decade of critical
                 infrastructure.
               </p>
             </div>

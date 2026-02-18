@@ -5,7 +5,7 @@ import SectionHeading from "./SectionHeading";
 
 const domains = [
   {
-    label: "Chains",
+    label: "Distributed Ledgers",
     techs: ["Solana", "Ethereum", "Arbitrum", "Base", "Cosmos"],
   },
   {
@@ -18,19 +18,23 @@ const domains = [
   },
   {
     label: "Infrastructure",
-    techs: ["TheGraph", "Helius", "Alchemy", "IPFS", "Supabase"],
+    techs: ["Kafka", "Redis", "Docker", "Kubernetes", "Terraform", "Supabase"],
   },
   {
     label: "Frontend",
-    techs: ["React", "Next.js", "TypeScript", "wagmi", "Wallet Adapters"],
+    techs: ["React", "Next.js", "TypeScript", "Tauri", "TailwindCSS"],
   },
   {
     label: "Backend / Systems",
-    techs: ["Rust", "Node.js", "Tauri", "PostgreSQL"],
+    techs: ["Rust", "Node.js", "Go", "PostgreSQL", "GraphQL"],
   },
   {
     label: "Compliance",
-    techs: ["Merkle Verification", "KYC/AML APIs", "Regulatory Frameworks"],
+    techs: ["Merkle Verification", "KYC/AML APIs", "Regulatory Frameworks", "Audit Trails"],
+  },
+  {
+    label: "DevOps / Cloud",
+    techs: ["AWS", "GCP", "CI/CD", "GitHub Actions", "Monitoring"],
   },
 ];
 
