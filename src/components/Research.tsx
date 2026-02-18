@@ -1,33 +1,42 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FileText, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import SectionHeading from "./SectionHeading";
+import Link from "next/link";
 
 const articles = [
   {
+    slug: "compliance-airlock",
     title: "The Compliance Airlock: Why Institutional DeFi Needs an Intelligent Middleware Layer",
     description:
       "How ML-driven compliance and risk scoring creates the bridge between open DeFi protocols and regulated institutional capital.",
     tags: ["Compliance", "AI", "Institutions"],
+    image: "/images/research/compliance-airlock.jpg", // Placeholder path
   },
   {
+    slug: "solana-rwa-architecture",
     title: "Tokenizing Real-World Assets on Solana: Architecture Decisions and Tradeoffs",
     description:
       "A technical post-mortem from the REFI2 build — Anchor program design, yield distribution mechanics, and KYC integration patterns.",
     tags: ["Solana", "RWA", "Architecture"],
+    image: "/images/research/solana-rwa.jpg", // Placeholder path
   },
   {
+    slug: "merkle-tree-verification",
     title: "Merkle Tree Verification for Onchain NAV Tracking",
     description:
       "Deep dive into the cryptographic verification architecture that enables trustless NAV reporting for tokenized asset protocols.",
     tags: ["Cryptography", "Verification"],
+    image: "/images/research/merkle-tree.jpg", // Placeholder path
   },
   {
+    slug: "ai-agents-defi",
     title: "AI Agents in DeFi: From Yield Optimization to Autonomous Risk Management",
     description:
       "Exploring the frontier of autonomous onchain systems — architecture patterns, safety mechanisms, and the path to verifiable inference.",
     tags: ["AI", "DeFi", "Agents"],
+    image: "/images/research/ai-agents.jpg", // Placeholder path
   },
 ];
 
@@ -37,17 +46,17 @@ const container = {
 };
 
 const card = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 30 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" as const },
+    transition: { duration: 0.6, ease: "easeOut" as const },
   },
 };
 
 export default function Research() {
   return (
-    <section id="research" className="relative py-28 md:py-36">
+    <section id="research" className="relative py-28 md:py-36 bg-raised">
       <div className="mx-auto max-w-7xl px-6">
         <SectionHeading
           label="Research"
@@ -60,46 +69,63 @@ export default function Research() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-60px" }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"
         >
           {articles.map((article) => (
             <motion.article
-              key={article.title}
+              key={article.slug}
               variants={card}
-              className="gradient-border group rounded-xl bg-card p-7 hover:bg-card-hover transition-colors duration-300 cursor-pointer"
+              className="group relative rounded-2xl overflow-hidden h-[450px] md:h-[550px] cursor-pointer"
             >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <FileText size={18} className="text-accent mt-0.5 shrink-0" />
-                <ArrowUpRight
-                  size={16}
-                  className="text-dim group-hover:text-accent transition-colors shrink-0"
-                />
-              </div>
+              <Link href={`/research/${article.slug}`}>
+                {/* Background Image */}
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                  style={{
+                    backgroundImage: `url(${article.image})`,
+                  }}
+                >
+                  {/* Fallback gradient if image doesn't load */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-accent/20 via-accent/10 to-transparent" />
+                </div>
 
-              <h3 className="font-display font-semibold text-lg text-heading leading-snug mb-3 group-hover:text-accent transition-colors duration-200">
-                {article.title}
-              </h3>
+                {/* Dark Overlay with gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-raised via-raised/85 to-raised/50 group-hover:from-raised/95 group-hover:via-raised/90 transition-all duration-500" />
 
-              <p className="text-sm text-body leading-relaxed mb-5">
-                {article.description}
-              </p>
+                {/* Content */}
+                <div className="relative h-full flex flex-col justify-end p-6 md:p-8 lg:p-10">
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {article.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1.5 text-xs font-mono text-accent bg-accent-glow/50 backdrop-blur-sm rounded-md border border-accent/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
 
-              <div className="flex flex-wrap gap-2">
-                {article.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2.5 py-1 text-[11px] font-mono text-muted bg-raised rounded-md"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+                  {/* Title */}
+                  <h3 className="font-display font-bold text-xl md:text-2xl lg:text-3xl text-heading leading-tight mb-3 group-hover:text-accent transition-colors duration-300">
+                    {article.title}
+                  </h3>
 
-              <div className="mt-5">
-                <span className="text-[11px] font-mono text-dim uppercase tracking-wider">
-                  Coming Soon
-                </span>
-              </div>
+                  {/* Description */}
+                  <p className="text-sm md:text-base text-body leading-relaxed mb-5 line-clamp-3">
+                    {article.description}
+                  </p>
+
+                  {/* CTA */}
+                  <div className="inline-flex items-center gap-2 text-sm font-medium text-accent group-hover:text-accent-alt transition-colors">
+                    <span>Read Article</span>
+                    <ArrowUpRight
+                      size={16}
+                      className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+                    />
+                  </div>
+                </div>
+              </Link>
             </motion.article>
           ))}
         </motion.div>
