@@ -32,6 +32,8 @@ const contentMap: Record<ContactMethod, ContentConfig> = {
 export default function Contact() {
   const [selectedMethod, setSelectedMethod] = useState<ContactMethod>("call");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const sectionRef = useRef<HTMLElement>(null);
 
   // Parallax scroll effect
@@ -43,9 +45,36 @@ export default function Contact() {
   // Transform background position based on scroll
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setSending(true);
+    setError("");
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          description: formData.get("description"),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Something went wrong.");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message.");
+    } finally {
+      setSending(false);
+    }
   }
 
   const currentContent = contentMap[selectedMethod];
@@ -307,6 +336,7 @@ export default function Contact() {
                               </label>
                               <input
                                 id="name"
+                                name="name"
                                 type="text"
                                 required
                                 className="w-full px-4 py-3 text-sm text-heading bg-raised border border-edge rounded-lg placeholder:text-dim focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
@@ -322,6 +352,7 @@ export default function Contact() {
                               </label>
                               <input
                                 id="email"
+                                name="email"
                                 type="email"
                                 required
                                 className="w-full px-4 py-3 text-sm text-heading bg-raised border border-edge rounded-lg placeholder:text-dim focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
@@ -339,6 +370,7 @@ export default function Contact() {
                             </label>
                             <textarea
                               id="description"
+                              name="description"
                               rows={4}
                               className="w-full px-4 py-3 text-sm text-heading bg-raised border border-edge rounded-lg placeholder:text-dim focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors resize-none"
                               placeholder="What are you building and where do you need help?"
@@ -347,12 +379,18 @@ export default function Contact() {
                         </div>
 
                         <div className="mt-6">
+                          {error && (
+                            <p className="text-sm text-red-400 mb-3 text-center">
+                              {error}
+                            </p>
+                          )}
                           <button
                             type="submit"
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                            disabled={sending}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Build with Us
-                            <Send size={15} />
+                            {sending ? "Sending..." : "Build with Us"}
+                            {!sending && <Send size={15} />}
                           </button>
                           <p className="text-xs text-muted text-center mt-2">
                             We reply within 1–2 business days
