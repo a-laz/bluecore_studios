@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   try {
     const { error } = await resend.emails.send({
-      from: "Bluecore Contact Form <onboarding@resend.dev>",
+      from: "Bluecore Contact Form <contact@bluecorestudio.com>",
       to: "dev@bluecorestudio.com",
       replyTo: email,
       subject: `New inquiry from ${name}`,
