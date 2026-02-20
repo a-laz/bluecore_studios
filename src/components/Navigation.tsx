@@ -67,7 +67,7 @@ export default function Navigation() {
         {/* Mobile toggle */}
         <button
           onClick={() => setOpen(!open)}
-          className="lg:hidden text-heading p-2"
+          className="lg:hidden text-heading p-2 cursor-pointer"
           aria-label={open ? "Close menu" : "Open menu"}
         >
           {open ? <X size={22} /> : <Menu size={22} />}
