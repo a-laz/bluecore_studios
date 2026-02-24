@@ -3,6 +3,7 @@
 import { useState, FormEvent, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Send, MessageCircle, Mail, Calendar, ArrowRight } from "lucide-react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import AnimateIn from "./AnimateIn";
 
 type ContactMethod = "call" | "telegram" | "email";
@@ -34,6 +35,8 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   // Parallax scroll effect
@@ -47,6 +50,12 @@ export default function Contact() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    if (!turnstileToken) {
+      setError("Please complete the verification.");
+      return;
+    }
+
     setSending(true);
     setError("");
 
@@ -61,6 +70,7 @@ export default function Contact() {
           name: formData.get("name"),
           email: formData.get("email"),
           description: formData.get("description"),
+          turnstileToken,
         }),
       });
 
@@ -72,6 +82,8 @@ export default function Contact() {
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message.");
+      turnstileRef.current?.reset();
+      setTurnstileToken(null);
     } finally {
       setSending(false);
     }
@@ -148,7 +160,7 @@ export default function Contact() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setSelectedMethod("call")}
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
+                  className={`cursor-pointer px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
                     selectedMethod === "call"
                       ? "bg-accent text-white shadow-lg shadow-accent/25"
                       : "bg-card border border-edge text-body hover:border-edge-light hover:text-heading"
@@ -159,7 +171,7 @@ export default function Contact() {
                 </button>
                 <button
                   onClick={() => setSelectedMethod("telegram")}
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
+                  className={`cursor-pointer px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
                     selectedMethod === "telegram"
                       ? "bg-accent text-white shadow-lg shadow-accent/25"
                       : "bg-card border border-edge text-body hover:border-edge-light hover:text-heading"
@@ -170,7 +182,7 @@ export default function Contact() {
                 </button>
                 <button
                   onClick={() => setSelectedMethod("email")}
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
+                  className={`cursor-pointer px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 ${
                     selectedMethod === "email"
                       ? "bg-accent text-white shadow-lg shadow-accent/25"
                       : "bg-card border border-edge text-body hover:border-edge-light hover:text-heading"
@@ -229,7 +241,7 @@ export default function Contact() {
                     <div className="mt-6">
                       <a
                         href="#"
-                        className="inline-flex items-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                        className="cursor-pointer inline-flex items-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
                       >
                         Book a Call
                         <ArrowRight size={15} />
@@ -286,7 +298,7 @@ export default function Contact() {
                         href="https://t.me/bluecorestudios"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                        className="cursor-pointer inline-flex items-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50"
                       >
                         Chat on Telegram
                         <ArrowRight size={15} />
@@ -378,7 +390,17 @@ export default function Contact() {
                           </div>
                         </div>
 
-                        <div className="mt-6">
+                        <Turnstile
+                          ref={turnstileRef}
+                          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                          onSuccess={setTurnstileToken}
+                          onError={() => setTurnstileToken(null)}
+                          onExpire={() => setTurnstileToken(null)}
+                          options={{ size: "flexible", theme: "dark", appearance: "interaction-only" }}
+                          className="mt-4"
+                        />
+
+                        <div className="mt-4">
                           {error && (
                             <p className="text-sm text-red-400 mb-3 text-center">
                               {error}
@@ -386,8 +408,8 @@ export default function Contact() {
                           )}
                           <button
                             type="submit"
-                            disabled={sending}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={sending || !turnstileToken}
+                            className="cursor-pointer w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold text-white bg-accent rounded-lg hover:bg-accent/85 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {sending ? "Sending..." : "Build with Us"}
                             {!sending && <Send size={15} />}
