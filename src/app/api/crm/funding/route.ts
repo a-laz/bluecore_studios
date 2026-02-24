@@ -63,9 +63,20 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     data: rows.map((r) => ({
-      ...r,
+      id: r.id,
+      company_name: r.companyName,
+      company_name_normalized: r.companyNameNormalized,
+      round_type: r.roundType,
+      amount_usd: r.amountUsd,
+      date: r.date,
       investors: JSON.parse(r.investors || "[]"),
       category_tags: JSON.parse(r.categoryTags || "[]"),
+      source: r.source,
+      source_url: r.sourceUrl,
+      company_website: r.companyWebsite,
+      description: r.description,
+      created_at: r.createdAt,
+      updated_at: r.updatedAt,
     })),
     total: countRow.count,
     page,

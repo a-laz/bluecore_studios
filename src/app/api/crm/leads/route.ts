@@ -59,7 +59,23 @@ export async function GET(request: NextRequest) {
   const total = totalRow?.count ?? 0;
 
   return NextResponse.json({
-    data: rows,
+    data: rows.map((r) => ({
+      id: r.id,
+      funding_round_id: r.fundingRoundId,
+      company_name: r.companyName,
+      company_website: r.companyWebsite,
+      contact_name: r.contactName,
+      contact_email: r.contactEmail,
+      contact_title: r.contactTitle,
+      stage: r.stage,
+      priority: r.priority,
+      deal_value: r.dealValue,
+      source: r.source,
+      lost_reason: r.lostReason,
+      next_follow_up: r.nextFollowUp,
+      created_at: r.createdAt,
+      updated_at: r.updatedAt,
+    })),
     total,
     page,
     limit,
