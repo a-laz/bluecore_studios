@@ -1,7 +1,9 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 async function verifyTurnstile(token: string): Promise<boolean> {
   const res = await fetch(
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "Bluecore Contact Form <contact@bluecorestudio.com>",
       to: "dev@bluecorestudio.com",
       replyTo: email,
