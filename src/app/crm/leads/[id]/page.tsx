@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Building2, Globe, User, Mail, Briefcase,
   Calendar, MessageSquare, Phone, Video, Send, Clock,
-  ChevronDown, Plus, Check, Trash2, ExternalLink,
+  ChevronDown, Plus, Check, Trash2, ExternalLink, StickyNote,
+  UserPlus, X,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,6 +47,24 @@ interface FollowUp {
   createdAt: string;
 }
 
+interface Contact {
+  id: number;
+  leadId: number;
+  name: string;
+  email: string | null;
+  title: string | null;
+  phone: string | null;
+  createdAt: string;
+}
+
+interface Note {
+  id: number;
+  leadId: number;
+  content: string;
+  authorName: string | null;
+  createdAt: string;
+}
+
 const STAGES = ["new", "contacted", "meeting", "proposal", "closed_won", "closed_lost"];
 const stageLabels: Record<string, string> = { new: "New", contacted: "Contacted", meeting: "Meeting", proposal: "Proposal", closed_won: "Won", closed_lost: "Lost" };
 const activityIcons: Record<string, typeof MessageSquare> = { note: MessageSquare, email: Send, call: Phone, meeting: Video, stage_change: ChevronDown, other: MessageSquare };
@@ -56,6 +75,8 @@ export default function LeadDetailPage() {
   const [lead, setLead] = useState<Lead | null>(null);
   const [activitiesList, setActivities] = useState<Activity[]>([]);
   const [followUpsList, setFollowUps] = useState<FollowUp[]>([]);
+  const [contactsList, setContacts] = useState<Contact[]>([]);
+  const [notesList, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Forms
@@ -63,6 +84,10 @@ export default function LeadDetailPage() {
   const [activityForm, setActivityForm] = useState({ type: "note", title: "", description: "" });
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [followUpForm, setFollowUpForm] = useState({ title: "", due_date: "" });
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", email: "", title: "", phone: "" });
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteForm, setNoteForm] = useState({ content: "", author_name: "" });
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
 
@@ -85,9 +110,21 @@ export default function LeadDetailPage() {
     setFollowUps(json.followUps);
   }, [id]);
 
+  const fetchContacts = useCallback(async () => {
+    const res = await fetch(`/api/crm/leads/${id}/contacts`);
+    const json = await res.json();
+    setContacts(json.contacts);
+  }, [id]);
+
+  const fetchNotes = useCallback(async () => {
+    const res = await fetch(`/api/crm/leads/${id}/notes`);
+    const json = await res.json();
+    setNotes(json.notes);
+  }, [id]);
+
   useEffect(() => {
-    Promise.all([fetchLead(), fetchActivities(), fetchFollowUps()]).then(() => setLoading(false));
-  }, [fetchLead, fetchActivities, fetchFollowUps]);
+    Promise.all([fetchLead(), fetchActivities(), fetchFollowUps(), fetchContacts(), fetchNotes()]).then(() => setLoading(false));
+  }, [fetchLead, fetchActivities, fetchFollowUps, fetchContacts, fetchNotes]);
 
   const handleStageChange = async (newStage: string) => {
     await fetch(`/api/crm/leads/${id}/stage`, {
@@ -131,6 +168,40 @@ export default function LeadDetailPage() {
       body: JSON.stringify({ completed: true }),
     });
     fetchFollowUps();
+  };
+
+  const handleAddContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch(`/api/crm/leads/${id}/contacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(contactForm),
+    });
+    setContactForm({ name: "", email: "", title: "", phone: "" });
+    setShowContactForm(false);
+    fetchContacts();
+  };
+
+  const handleDeleteContact = async (contactId: number) => {
+    await fetch(`/api/crm/leads/${id}/contacts/${contactId}`, { method: "DELETE" });
+    fetchContacts();
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch(`/api/crm/leads/${id}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(noteForm),
+    });
+    setNoteForm({ content: "", author_name: "" });
+    setShowNoteForm(false);
+    fetchNotes();
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    await fetch(`/api/crm/leads/${id}/notes/${noteId}`, { method: "DELETE" });
+    fetchNotes();
   };
 
   const handleSaveEdit = async () => {
@@ -240,7 +311,50 @@ export default function LeadDetailPage() {
             </div>
           )}
 
-          {/* Activity Form */}
+          {/* Notes Section */}
+          <div className="glass-card rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-semibold text-heading text-sm flex items-center gap-2">
+                <StickyNote size={14} className="text-accent" /> Notes
+              </h3>
+              <button onClick={() => setShowNoteForm(!showNoteForm)} className="flex items-center gap-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded transition-colors">
+                <Plus size={14} /> Add
+              </button>
+            </div>
+            {showNoteForm && (
+              <form onSubmit={handleAddNote} className="mb-4 p-3 bg-surface rounded-lg border border-edge space-y-3">
+                <input placeholder="Your name (optional)" value={noteForm.author_name} onChange={(e) => setNoteForm({ ...noteForm, author_name: e.target.value })} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none" />
+                <textarea required placeholder="Write a note..." value={noteForm.content} onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })} rows={3} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none resize-none" />
+                <div className="flex gap-2">
+                  <button type="submit" className="px-3 py-1.5 bg-accent text-white text-xs rounded hover:bg-accent/90 transition-colors">Save Note</button>
+                  <button type="button" onClick={() => setShowNoteForm(false)} className="px-3 py-1.5 bg-card border border-edge text-xs text-muted rounded hover:text-heading transition-colors">Cancel</button>
+                </div>
+              </form>
+            )}
+            <div className="space-y-3">
+              {notesList.length === 0 ? (
+                <p className="text-muted text-xs py-4 text-center">No notes yet</p>
+              ) : (
+                notesList.map((note) => (
+                  <div key={note.id} className="p-3 bg-surface rounded-lg border border-edge/50 group">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-heading whitespace-pre-wrap flex-1">{note.content}</p>
+                      <button onClick={() => handleDeleteNote(note.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition-all shrink-0">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-dim">
+                      {note.authorName && <span>{note.authorName}</span>}
+                      {note.authorName && <span>·</span>}
+                      <span>{new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Activity Timeline */}
           <div className="glass-card rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-display font-semibold text-heading text-sm">Activity Timeline</h3>
@@ -317,6 +431,49 @@ export default function LeadDetailPage() {
               </div>
               {lead.source && (
                 <div className="text-xs text-muted capitalize">Source: {lead.source}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Contacts */}
+          <div className="glass-card rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-semibold text-heading text-sm">Contacts</h3>
+              <button onClick={() => setShowContactForm(!showContactForm)} className="flex items-center gap-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded transition-colors">
+                <UserPlus size={14} />
+              </button>
+            </div>
+            {showContactForm && (
+              <form onSubmit={handleAddContact} className="mb-3 p-3 bg-surface rounded-lg border border-edge space-y-2">
+                <input required placeholder="Name *" value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none" />
+                <input placeholder="Email" type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none" />
+                <input placeholder="Title" value={contactForm.title} onChange={(e) => setContactForm({ ...contactForm, title: e.target.value })} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none" />
+                <input placeholder="Phone" value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} className="w-full px-2 py-1.5 bg-card border border-edge rounded text-xs text-heading placeholder:text-dim focus:outline-none" />
+                <div className="flex gap-2">
+                  <button type="submit" className="px-3 py-1.5 bg-accent text-white text-xs rounded hover:bg-accent/90 transition-colors">Add</button>
+                  <button type="button" onClick={() => setShowContactForm(false)} className="px-3 py-1.5 bg-card border border-edge text-xs text-muted rounded hover:text-heading transition-colors">Cancel</button>
+                </div>
+              </form>
+            )}
+            <div className="space-y-2">
+              {contactsList.length === 0 ? (
+                <p className="text-muted text-xs text-center py-2">No additional contacts</p>
+              ) : (
+                contactsList.map((c) => (
+                  <div key={c.id} className="p-2.5 bg-surface rounded-lg border border-edge/50 group">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-xs font-medium text-heading flex items-center gap-1.5"><User size={12} /> {c.name}</p>
+                        {c.email && <p className="text-xs text-muted flex items-center gap-1.5"><Mail size={12} /> <a href={`mailto:${c.email}`} className="hover:text-accent truncate">{c.email}</a></p>}
+                        {c.title && <p className="text-xs text-muted flex items-center gap-1.5"><Briefcase size={12} /> {c.title}</p>}
+                        {c.phone && <p className="text-xs text-muted flex items-center gap-1.5"><Phone size={12} /> {c.phone}</p>}
+                      </div>
+                      <button onClick={() => handleDeleteContact(c.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition-all shrink-0 mt-0.5">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
