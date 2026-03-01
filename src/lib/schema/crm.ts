@@ -75,6 +75,24 @@ export const fundingRounds = sqliteTable("funding_rounds", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const leadContacts = sqliteTable("lead_contacts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email"),
+  title: text("title"),
+  phone: text("phone"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const leadNotes = sqliteTable("lead_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  leadId: integer("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  authorName: text("author_name"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const dailyReports = sqliteTable("daily_reports", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
@@ -92,4 +110,6 @@ export type Activity = typeof activities.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type FollowUp = typeof followUps.$inferSelect;
 export type FundingRoundRow = typeof fundingRounds.$inferSelect;
+export type LeadContact = typeof leadContacts.$inferSelect;
+export type LeadNote = typeof leadNotes.$inferSelect;
 export type DailyReport = typeof dailyReports.$inferSelect;
