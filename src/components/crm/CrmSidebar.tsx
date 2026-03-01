@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/crm/leads", label: "Leads", icon: Users },
   { href: "/crm/funding", label: "Funding Data", icon: Database },
   { href: "/crm/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/crm/documents", label: "Documents", icon: FileText },
   { href: "/crm/settings", label: "Settings", icon: Settings },
 ];
 

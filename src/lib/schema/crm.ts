@@ -75,9 +75,21 @@ export const fundingRounds = sqliteTable("funding_rounds", {
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const dailyReports = sqliteTable("daily_reports", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  date: text("date").notNull(),
+  tasksCompleted: text("tasks_completed").notNull(),
+  tasksInProgress: text("tasks_in_progress"),
+  blockers: text("blockers"),
+  hoursWorked: real("hours_worked").notNull(),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type Activity = typeof activities.$inferSelect;
 export type Tag = typeof tags.$inferSelect;
 export type FollowUp = typeof followUps.$inferSelect;
 export type FundingRoundRow = typeof fundingRounds.$inferSelect;
+export type DailyReport = typeof dailyReports.$inferSelect;
