@@ -12,6 +12,7 @@ import {
   Clock,
   User,
   CheckCircle2,
+  Pencil,
 } from "lucide-react";
 
 interface DailyReport {
@@ -341,7 +342,7 @@ function DailyWorkForm() {
         ) : (
           <div className="space-y-3">
             {reports.map((r) => (
-              <ReportCard key={r.id} report={r} />
+              <ReportCard key={r.id} report={r} onUpdate={fetchReports} />
             ))}
           </div>
         )}
@@ -350,8 +351,47 @@ function DailyWorkForm() {
   );
 }
 
-function ReportCard({ report }: { report: DailyReport }) {
+function ReportCard({ report, onUpdate }: { report: DailyReport; onUpdate: () => void }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: report.name,
+    date: report.date,
+    tasks_completed: report.tasks_completed,
+    tasks_in_progress: report.tasks_in_progress || "",
+    blockers: report.blockers || "",
+    hours_worked: String(report.hours_worked),
+  });
+
+  const inputClass =
+    "w-full px-3 py-2 bg-card border border-edge rounded-lg text-heading text-sm placeholder:text-dim focus:outline-none focus:border-accent/50 transition-colors";
+
+  const handleSave = async () => {
+    setSaving(true);
+    const res = await fetch(`/api/crm/daily-reports/${report.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    if (res.ok) {
+      setEditing(false);
+      onUpdate();
+    }
+    setSaving(false);
+  };
+
+  const handleCancel = () => {
+    setEditForm({
+      name: report.name,
+      date: report.date,
+      tasks_completed: report.tasks_completed,
+      tasks_in_progress: report.tasks_in_progress || "",
+      blockers: report.blockers || "",
+      hours_worked: String(report.hours_worked),
+    });
+    setEditing(false);
+  };
 
   return (
     <div className="bg-surface rounded-lg border border-edge overflow-hidden">
@@ -375,20 +415,107 @@ function ReportCard({ report }: { report: DailyReport }) {
       </button>
       {open && (
         <div className="px-3 pb-3 pt-0 border-t border-edge space-y-2 text-xs">
-          <div className="pt-2">
-            <span className="font-semibold text-heading">Completed:</span>
-            <p className="text-muted whitespace-pre-wrap mt-0.5">{report.tasks_completed}</p>
-          </div>
-          {report.tasks_in_progress && (
-            <div>
-              <span className="font-semibold text-heading">In Progress:</span>
-              <p className="text-muted whitespace-pre-wrap mt-0.5">{report.tasks_in_progress}</p>
-            </div>
-          )}
-          {report.blockers && (
-            <div>
-              <span className="font-semibold text-heading">Blockers:</span>
-              <p className="text-muted whitespace-pre-wrap mt-0.5">{report.blockers}</p>
+          {!editing ? (
+            <>
+              <div className="pt-2 flex items-center justify-between">
+                <span className="font-semibold text-heading">Completed:</span>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center gap-1 text-muted hover:text-accent transition-colors"
+                >
+                  <Pencil size={12} />
+                  <span>Edit</span>
+                </button>
+              </div>
+              <p className="text-muted whitespace-pre-wrap mt-0.5">{report.tasks_completed}</p>
+              {report.tasks_in_progress && (
+                <div>
+                  <span className="font-semibold text-heading">In Progress:</span>
+                  <p className="text-muted whitespace-pre-wrap mt-0.5">{report.tasks_in_progress}</p>
+                </div>
+              )}
+              {report.blockers && (
+                <div>
+                  <span className="font-semibold text-heading">Blockers:</span>
+                  <p className="text-muted whitespace-pre-wrap mt-0.5">{report.blockers}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="pt-2 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted mb-1 block font-medium">Name</label>
+                  <input
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted mb-1 block font-medium">Date</label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block font-medium">Tasks Completed</label>
+                <textarea
+                  rows={3}
+                  value={editForm.tasks_completed}
+                  onChange={(e) => setEditForm({ ...editForm, tasks_completed: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block font-medium">Tasks In Progress</label>
+                <textarea
+                  rows={2}
+                  value={editForm.tasks_in_progress}
+                  onChange={(e) => setEditForm({ ...editForm, tasks_in_progress: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block font-medium">Blockers</label>
+                <textarea
+                  rows={2}
+                  value={editForm.blockers}
+                  onChange={(e) => setEditForm({ ...editForm, blockers: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              <div className="max-w-[200px]">
+                <label className="text-xs text-muted mb-1 block font-medium">Hours Worked</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="24"
+                  value={editForm.hours_worked}
+                  onChange={(e) => setEditForm({ ...editForm, hours_worked: e.target.value })}
+                  className={inputClass}
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-1.5 bg-accent hover:bg-accent/90 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="px-4 py-1.5 text-muted hover:text-heading text-xs font-medium rounded-lg border border-edge hover:bg-card/50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
         </div>
