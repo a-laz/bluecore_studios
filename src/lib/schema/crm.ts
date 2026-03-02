@@ -104,6 +104,20 @@ export const dailyReports = sqliteTable("daily_reports", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const dataRoomDocuments = sqliteTable("data_room_documents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category", {
+    enum: ["contracts", "proposals", "research", "templates", "sops", "reports", "other"],
+  }).notNull().default("other"),
+  fileUrl: text("file_url").notNull(),
+  fileType: text("file_type"),
+  sharedBy: text("shared_by").notNull(),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type Activity = typeof activities.$inferSelect;
@@ -113,3 +127,4 @@ export type FundingRoundRow = typeof fundingRounds.$inferSelect;
 export type LeadContact = typeof leadContacts.$inferSelect;
 export type LeadNote = typeof leadNotes.$inferSelect;
 export type DailyReport = typeof dailyReports.$inferSelect;
+export type DataRoomDocument = typeof dataRoomDocuments.$inferSelect;
