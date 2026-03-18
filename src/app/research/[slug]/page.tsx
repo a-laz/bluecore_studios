@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 // Article data - in a real app, this would come from a CMS or database
 const articles: Record<string, {
@@ -229,6 +230,71 @@ Build it in from the start. It's cheaper, it's faster, and someday someone is go
 You want to be the team that can.
     `,
   },
+  "realtime-systems-lie": {
+    slug: "realtime-systems-lie",
+    title: "Your Real-Time Dashboard Isn't Real-Time. It's a Confident Lie.",
+    description: "Why the number on your ops dashboard can be right on average and wrong right now — and what it actually takes to build a monitoring system your team can trust when it matters.",
+    tags: ["Risk Engineering", "Data Infrastructure"],
+    image: "/images/research/realtime.png",
+    author: "Bluecore Team",
+    date: "2026-03-18",
+    readTime: "16 min read",
+    content: `
+# Your Real-Time Dashboard Isn't Real-Time. It's a Confident Lie.
+
+Flink's default \`allowedLateness\` is zero. That one configuration detail is responsible for more silent data loss in production pipelines than anything else we deal with, and most teams running Flink don't know it.
+
+Here's what it means: any event that arrives after its window has already fired gets dropped. Not queued. Not flagged. Dropped, with no counter and no log entry unless you add one yourself. The dashboard keeps updating. The job is green. The aggregates are just quietly missing events, and there is no signal that this is happening.
+
+## Event Time, Processing Time, and Why the Default Is Wrong
+
+To understand why this happens you have to understand that Flink has two different models for time. Processing-time windows fire based on when the pipeline sees events. Event-time windows fire based on when events actually happened. The default is processing-time.
+
+Processing-time is easy to reason about. It's also non-deterministic — restart the pipeline and you'll get different results, because the windows depend on when events arrived at the processor, not when they occurred. If you're trying to compare output across a canary deployment, or replay history after an incident, the numbers won't align. This is a fundamental property of the model, not a bug you can configure away.
+
+Event-time processing requires watermarks. A watermark is a signal embedded in the stream that says "we believe all events with timestamp ≤ T have now arrived." Flink fires windows when the watermark passes the window boundary. There's an idle partition problem that's less obvious: watermarks are per-partition, and Flink takes the minimum across all partitions to advance the global clock. One partition with no new events holds back the watermark for the entire job. Every window stalls. No output, no error. This is in Confluent's troubleshooting guide under "why is Flink not producing results" and the fix is \`withIdleness()\` on the source operator — but you have to know to look.
+
+Back to \`allowedLateness\`. The late-arriving events that miss their window aren't visible in any default metric. A window that captured 94% of its events looks identical to one that captured 100%. The gap tends to be correlated — if a specific upstream service was under load during a spike, its events arrive late together, and those are also the events most likely to carry signal during an incident. You find out about it from a reconciliation, not from the pipeline.
+
+## The Exactly-Once Trap
+
+Kafka and Flink, properly configured, do provide exactly-once processing. This is true. It's also more limited than most people understand when they decide to rely on it.
+
+The guarantee covers the boundary between the Kafka broker and the Flink operator. When you write to an external sink — Postgres, ClickHouse, Elasticsearch, S3 — you've left the transactional boundary. Kafka's two-phase commit doesn't extend to systems that don't participate in the Kafka transaction protocol, which is most external sinks. A Flink job can produce perfectly correct, deduplicated aggregates and write them to ClickHouse, and a dashboard querying that table mid-write reads a partial result. The exactly-once guarantee ended at the write. The read is on its own.
+
+Debezium, which most teams use to stream Postgres changes into Kafka, is at-least-once by design — not a limitation they're working on. After any unclean shutdown or connector restart, it re-reads from its last saved WAL position and replays. Duplicates land in the topic. If downstream consumers are summing or accumulating state rather than upserting on event ID, those duplicates corrupt aggregates silently. We made idempotent consumers a hard requirement on every CDC-fed pipeline after running into this on a billing integration — the discovery was a reconciliation showing inflated totals, the cause was a connector restart three weeks prior, and fixing it required retrofitting deduplication across services that were already live. Going back is worse than building it in.
+
+Idempotent sinks matter more than upstream exactly-once guarantees for exactly this reason. The upstream pipeline will restart. Connectors will replay. Designing the sink to tolerate duplicates is the only part of the system you can actually hold constant.
+
+## Kafka Has Its Own Ways of Lying to You
+
+Flink gets most of the attention in these conversations, but Kafka has failure modes that are just as quiet and just as easy to miss.
+
+The consumer lag metric during a partition rebalance is the one that catches teams off guard most often. \`records-lag-max\` stops updating while the rebalance is in progress. Producers keep writing, consumers stop processing, lag is growing — and the metric is frozen at whatever it was before the rebalance started. If your alerting is built on that metric, it sees nothing. When the rebalance completes and numbers resume, the spike you see is real but it's already late — the gap opened 10, 20, 30 seconds earlier, during the window your monitoring was blind. Rebalances also tend to happen when the cluster is under enough load that a rebalance is being triggered in the first place, so the blind spot and the actual risk are correlated.
+
+The \`isolation.level\` default is a different category of problem — less about monitoring, more about correctness assumptions people don't realize they're making. Kafka's default is \`read_uncommitted\`. If a producer is using transactions, consumers will read messages that haven't been committed yet by default. Most teams that set up transactions on the producer side don't touch \`isolation.level\` on the consumer side because they don't know they need to. The result is dirty reads from a system they believe is transactional.
+
+Log compaction is the third one, and it's more situational — it only bites consumers that fall significantly behind. In a compacted topic, Kafka retains only the latest record per key. Intermediate states get deleted. A consumer that's been down for a few hours and starts replaying from its last offset won't see the intermediate values — just the final state of each key as of whenever it catches up. If the consumer's logic depends on processing transitions rather than terminal states, it processes incomplete data with no indication that anything was removed. The topic looks normal. The offsets advance. The data was just never there.
+
+## The Read Layer Has Its Own Version of This Problem
+
+The write-path problems above are the ones that show up in pipelines. The read path has a different version of the same failure.
+
+Replication lag between a primary and its read replicas is not a constant. On a quiet system it might be 10 milliseconds. During a write spike or routine replica maintenance it can be 30 seconds or more. The dashboard reading from the replica doesn't know it's behind. Nothing says "this data is 28 seconds old." It shows what it has.
+
+"Eventually consistent" means replicas converge, given no new writes, at some unspecified point. It says nothing about how long convergence takes or what a reader sees during the window. A system described as real-time that reads from an eventually-consistent store is operating on a staleness assumption it can't actually verify. Most teams, when pressed, can't tell you what their current replication lag bound is — not because they haven't looked, but because the architecture was never designed to surface it.
+
+What we push for is every projection and replica-backed view carrying an enforced staleness bound — not a cosmetic "last updated" timestamp, but an actual constraint: this view is no more than X seconds behind the write model, and if it is, it says so. Getting there usually starts with the same question: what's your current replication lag bound? Most teams don't have an answer. Once they admit that, the conversation about what to build is easier.
+
+## What Actually Gets Fixed and When
+
+When we come into a system that has these problems, the first conversation is usually about event-time processing — switching from processing-time windows, setting up proper watermarks, routing late events to a side output so you can actually see what's being excluded. That change has to go down to the schema and write path. You can't retrofit it cleanly into a running pipeline; you end up reprocessing history in a system that wasn't designed for replay, against records that may not have reliable event timestamps to begin with.
+
+The idempotent consumers, the staleness contracts, the watermark idle-source config — those are all the same conversation happening at different layers. What makes them expensive after the fact isn't the engineering, it's that the system is live, people are nervous about touching it, and the original decisions were made by people who aren't around to explain them.
+
+The usual sequence: it gets scoped, deprioritized, rescheduled. The pipeline ships. Six months later someone asks whether the aggregates can be trusted and nobody has a clean answer. At that point you're not adding correctness — you're reverse-engineering history the system never kept, in a codebase where the original context is gone.
+    `,
+  },
   "agent-prompt-architecture": {
     slug: "agent-prompt-architecture",
     title: "Your AI Agent Isn't Broken. Your Prompt Is an Instruction Manual Written in Crayon.",
@@ -322,6 +388,91 @@ Write the runbook. Declare the states. Enforce the guards. Define the contracts.
 Then your agent stops guessing and starts behaving like something you'd actually trust with real work.
     `,
   },
+  "solana-account-model-evm": {
+    slug: "solana-account-model-evm",
+    title: "EVM Developers on Solana: What the Account Model Actually Changes",
+    description: "Most EVM-to-Solana comparisons stop at TPS and gas costs. The architectural difference that actually matters is that EVM contracts own their state and Solana programs don't — and that changes how you design every DeFi primitive from the ground up.",
+    tags: ["DeFi Infrastructure", "Protocol Design"],
+    image: "/images/research/evm_to_solana.png",
+    author: "Bluecore Team",
+    date: "2023-11-08",
+    readTime: "18 min read",
+    content: `
+# EVM Developers on Solana: What the Account Model Actually Changes
+
+In October 2022, an attacker drained $116 million from Mango Markets in about half an hour. The mechanics involved manipulating a low-liquidity token's price on Mango's own oracle, posting the inflated position as collateral, and borrowing heavily against it before the price normalized. The oracle read was valid — the price feed was fresh. The price was just engineered.
+
+This gets cited as an oracle problem, which is accurate. What gets less attention is why Mango's oracle was vulnerable in that particular way, and why teams porting lending logic from Ethereum tend to get oracle handling wrong on Solana even when they know to be careful.
+
+Pyth price feeds are regular accounts. They have to be passed into your instruction as a parameter, and if the account is stale, you read the stale price. The protocol validates staleness by checking \`price.published_at\` against \`Clock::get().unix_timestamp\`. It should also check the confidence interval — Pyth widens this when price discovery is uncertain — but Chainlink's EVM interface doesn't surface confidence intervals in the same form, so teams that have spent years writing EVM lending code just don't have that check in their muscle memory. The gap isn't carelessness. It's that the failure mode doesn't exist in the environment they came from.
+
+## State Doesn't Live Where You Think It Does
+
+A Solana program is stateless bytecode. All mutable state lives in separate accounts passed explicitly to every instruction. There's no \`storage\` keyword. There's no \`address(this)\`. Everything your protocol needs to read or write — market config, vault balances, user positions, fee state — is a separate account with its own address and byte layout, and every instruction that touches it must declare it upfront.
+
+EVM contracts own their state. It's co-located with the code, implicitly, with no setup. You declare a \`mapping(address => UserPosition)\` and write to it. The storage lives at the contract address by default.
+
+None of that exists on Solana, and that gap is where EVM developers spend their first few weeks confused in ways that are hard to articulate. The confusion doesn't feel like "I don't understand this" — it feels like "this keeps not working and I don't know why."
+
+A deposit instruction in a Solana lending protocol passes 12 to 15 accounts. Market config, asset reserve, user obligation, liquidity vault, collateral vault, fee vault, oracle, user token accounts, system program, token program, rent sysvar. The verbosity isn't overhead. Those accounts are the state. The instruction routes through them, it doesn't own them.
+
+PDAs are how this becomes workable at scale. A Program Derived Address is derived deterministically from seeds and a program ID, and it lands off the Ed25519 curve — meaning no private key can exist for it. The owning program signs for it via \`invoke_signed\` by supplying the original seeds; the runtime re-derives the address to verify. Vaults, user positions, market accounts — all of this can be created and controlled without the program holding a key.
+
+One thing that's genuinely under-documented: the canonical bump (the highest nonce that produces a valid off-curve address) should always be stored in account data and passed in, not recomputed on-chain. \`find_program_address\` iterates from 255 downward, spending roughly 1,500 compute units per attempt. This doesn't sound like much until you're calling it on every deposit and realize you're burning 15,000+ CU before any business logic runs. The Solana compute budget is 200,000 CU per transaction by default. 15k is not nothing.
+
+I ended up down a rabbit hole once trying to figure out why a program was intermittently bumping into compute limits on what seemed like a simple instruction. It was the bump. Three places in the code recomputed it. Storing it in the account and passing it as a constraint fixed all three.
+
+There's a related question about how the priority fee market interacts with compute unit consumption that I still don't have a clean mental model for. You can request more compute units per transaction with \`ComputeBudgetInstruction::set_compute_unit_limit\` — up to 1.4M — but validators prioritize transactions by fee-per-compute-unit, not fee-per-transaction. Which means a compute-heavy program that doesn't tune its CU request is effectively paying the same priority fee as a lightweight one from the validator's perspective. The recommendation is to simulate transactions and request exactly what you need, but simulated CU usage and actual CU usage can diverge when account state changes between simulation and execution. I've seen teams go in circles on this for a while without landing on a satisfying approach. Anyway — security.
+
+## The Attack Surface Doesn't Shrink. It Moves.
+
+Re-entrancy doesn't exist on Solana. The SBF VM returns \`ReentrancyNotAllowed\` if program A calls program B and B tries to call A. This is runtime enforcement. You can't write a re-entrancy bug because the runtime won't execute it. There's no \`receive()\` fallback, no ERC-777-style token hook, no way to inject code via ETH transfers. A whole category of EVM exploit history just doesn't apply.
+
+What you get instead is a different set of vulnerabilities that EVM developers consistently underestimate, because the intuitions don't transfer.
+
+Account data is untyped bytes. The runtime checks ownership — only the owner program can write to an account — but it doesn't check type. If your program deserializes an account without verifying \`account.owner == your_program_id\`, an attacker passes a crafted account owned by a program they control with a byte layout that happens to deserialize as your struct. The program accepts it. This is probably the most common exploitable vulnerability in audited Solana programs, and it keeps appearing because EVM developers have no equivalent to draw on. The EVM runtime guarantees that code at a contract address is the code that was deployed there, and that storage belongs to that contract. An external account can't forge internal state. On Solana nothing prevents an attacker from constructing bytes that pattern-match your struct — so the program has to do the check itself.
+
+Related, and weirder: \`Config { admin: Pubkey, fee: u64 }\` and \`User { authority: Pubkey, balance: u64 }\` are both 40 bytes with the same field layout. Without a type discriminator, a program expecting a Config account will silently accept a User account. Anchor prepends an 8-byte discriminator to every account and validates it before deserialization. Teams that avoid Anchor to save compute units tend to not reimplement this correctly — they'll add the owner check but forget the discriminator, or get the check order wrong and create a TOCTOU window.
+
+The signer check failure is more embarrassing than it sounds. \`account.key == admin_pubkey\` without \`account.is_signer\` accepts any transaction that includes the admin's pubkey as an unsigned account reference. The Wormhole exploit involved something structurally similar — a guardian signature verification function was substituted for a no-op. $320M in bridged assets was controlled by a validator set that was never actually asked to sign.
+
+Arbitrary CPI is the last one worth dwelling on because it shows up in reasonable-looking aggregation code. If a program accepts a program ID as a user-supplied parameter and calls \`invoke\` without checking it against an allowlist, the user controls the program that gets invoked. It reads as obvious in retrospect, but during a fast build it just looks like flexibility.
+
+There's also a class of subtle account confusion bugs that don't fit neatly into any of these categories — where the wrong account is passed and deserialization silently succeeds because the byte layout happens to be compatible, and the program proceeds with corrupted state. Anchor catches most of these through its \`Account<'info, T>\` wrapper and seeds constraints, but programs that do manual account parsing have to reason through every combination carefully. I've seen two audited programs where this was the critical finding, and in both cases the auditors had missed it on the first pass.
+
+## What the Account Model Does to Protocol Design
+
+The fixed-size array problem doesn't get talked about enough.
+
+Account data is fixed at creation. \`realloc\` lets you grow an account up to 10 KiB per instruction — but that's a ceiling per instruction, not per operation, and you have to fund the rent delta and initialize the new space yourself. MarginFi's \`LendingAccount\` supports up to 16 positions. Kamino's obligation structure has a similar cap. When a user hits the limit, they can't open a new position without closing one. There's no equivalent in a mapping-based model.
+
+Adding a new field to an existing account type — say, a reward tracking field for a new token — means migrating every existing account. You can do it upfront (one signed transaction per account, which scales terribly), lazily on first interaction (returning users absorb the cost), or by pre-allocating slack space at creation (everyone pays rent on bytes that might never be used). None of these are equivalent to just adding a key to a mapping, and the choice you make at launch locks in tradeoffs you'll be living with for years.
+
+The rent calculation is \`(data_length + 128) × 3480 × 2\` lamports for rent exemption — roughly 0.002 SOL for a 165-byte token account, more for larger ones. Before a user can receive any token, they need an associated token account for that specific mint. If they don't have one, the transfer fails. Not "shows an error" — fails.
+
+This produces a failure mode in reward distributions I've seen more than once. Protocol ships a new reward token, runs the distribution, transactions fail for everyone who hasn't previously held that token. The protocol then has to create ATAs from treasury SOL (cost they hadn't planned for), exclude those users, or delay. The first time it happens it's surprising. The second time it's just embarrassing because it should have been in the pre-launch checklist.
+
+Side note that always trips people up: Solana programs are upgradeable by default. The deploy authority can push new bytecode. This is the opposite of the EVM default, where contracts are immutable unless you've explicitly built an upgradeable proxy. Most production Solana protocols eventually freeze the upgrade authority or transfer it to a governance multisig, but early in development they don't, and wallets will sometimes warn users about this. It's not a security flaw exactly — but it's a different trust model than EVM developers expect, and if you forget to freeze it before mainnet, you'll have a fun conversation with your auditors.
+
+## Flash Loans, Briefly
+
+Solana flash loans work through instruction introspection. The lending program reads \`sysvar::instructions\` — a sysvar that exposes the full current transaction's instruction set — and validates that a repay instruction appears later before releasing funds. If the repay fails, everything reverts at the transaction level.
+
+The transaction construction is different from EVM: all accounts for all intermediate steps have to be known and declared before submission. You can't discover a pool's address at runtime and route through it. Jupiter runs its routing engine off-chain not as an optimization but because Solana's account declaration requirement makes on-chain dynamic routing architecturally impossible. For simple arbitrage, the off-chain builder does more work but it's fine. For anything that needs to discover intermediate state on-chain during execution, you're stuck.
+
+Jito bundles complicate this picture in ways I don't want to overstate. Bundles allow up to five transactions to execute atomically within a single slot, which opens cross-transaction patterns that aren't possible in native Solana. The flash loan design space shifts somewhat. I don't have current production experience building flash loan infrastructure on Solana, so I'll leave the bundle question to people who've actually shipped it recently — the ecosystem has moved fast here.
+
+## The Account Declaration Thing, Again
+
+I keep coming back to the upfront account declaration requirement because it's the one that catches smart teams at the worst moment. You're three weeks from launch, building the routing layer, and you realize your on-chain program can't do something you assumed was possible because the accounts aren't known until execution. The architecture has to change.
+
+Every account touched must be declared before the transaction is signed. Complex multi-hop routes with oracle accounts and tick arrays at each hop run into the 1,232-byte transaction size limit (that's IPv6 MTU minus headers — the limit comes from wanting transactions to fit in a single UDP packet). Each account address is 32 bytes. v0 transactions with Address Lookup Tables push this boundary out somewhat, but they don't eliminate it.
+
+Any time your program needs to conditionally access one of two accounts based on runtime state, both accounts have to be in the transaction even if only one gets used. If the routing decision can't be made until execution, both possible routes have to be pre-loaded. This isn't a footgun that experienced developers work around — it's a fundamental property of the execution model. Designing around it is different from being surprised by it.
+
+The oracle staleness issue from Mango is the one I think about most. It's where the mental model from Ethereum is most subtly wrong and the gap is hardest to notice in code review. Teams checking staleness but not the confidence interval will pass an audit, deploy to mainnet, and still be vulnerable to the exact attack vector that cost Mango $116M. The confidence interval check is the thing most teams still don't do.
+    `,
+  },
 };
 
 export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -405,9 +556,22 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
       <article className="relative py-16 md:py-24 bg-raised">
         <div className="mx-auto max-w-3xl px-6">
           <div className="prose prose-invert prose-lg max-w-none">
-            <div className="text-body leading-relaxed whitespace-pre-line">
+            <ReactMarkdown
+              components={{
+                h1: ({ children }) => <h1 className="font-display font-bold text-3xl text-heading mt-10 mb-4">{children}</h1>,
+                h2: ({ children }) => <h2 className="font-display font-bold text-2xl text-heading mt-10 mb-4">{children}</h2>,
+                h3: ({ children }) => <h3 className="font-display font-semibold text-xl text-heading mt-8 mb-3">{children}</h3>,
+                p: ({ children }) => <p className="text-body leading-relaxed mb-6">{children}</p>,
+                strong: ({ children }) => <strong className="text-heading font-semibold">{children}</strong>,
+                code: ({ children }) => <code className="font-mono text-accent bg-accent-glow/30 px-1.5 py-0.5 rounded text-sm">{children}</code>,
+                ul: ({ children }) => <ul className="list-disc list-inside text-body mb-6 space-y-2">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside text-body mb-6 space-y-2">{children}</ol>,
+                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                blockquote: ({ children }) => <blockquote className="border-l-2 border-accent pl-6 my-6 text-body italic">{children}</blockquote>,
+              }}
+            >
               {article.content}
-            </div>
+            </ReactMarkdown>
           </div>
 
           {/* Back to Research Link */}
