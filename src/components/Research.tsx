@@ -46,6 +46,14 @@ const articles: {
     image: "/images/research/agent-prompt.png",
   },
   {
+    slug: "solana-account-model-evm",
+    title: "EVM Developers on Solana: What the Account Model Actually Changes",
+    description:
+      "Most EVM-to-Solana comparisons stop at TPS and gas costs. The architectural difference that actually matters is that EVM contracts own their state and Solana programs don't.",
+    tags: ["DeFi Infrastructure", "Protocol Design"],
+    image: "/images/research/evm_to_solana.png",
+  },
+  {
     slug: "realtime-systems-lie",
     title: "Your Real-Time Dashboard Isn't Real-Time. It's a Confident Lie.",
     description:
