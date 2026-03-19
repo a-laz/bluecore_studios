@@ -8,9 +8,112 @@ export async function GET(req: Request) {
   const slug = searchParams.get("slug") ?? "";
   const article = articles[slug];
 
+  const isHomepage = !slug;
   const title = article?.title ?? "Bluecore Studios";
   const tags = article?.tags ?? [];
   const readTime = article?.readTime ?? "";
+
+  const baseUrl = new URL(req.url).origin;
+
+  if (isHomepage) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "1200px",
+            height: "630px",
+            display: "flex",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Background image — cropped and centered */}
+          <img
+            src={`${baseUrl}/images/og-logo.png`}
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "1200px",
+              height: "1200px",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+          />
+
+          {/* Dark overlay for text legibility */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to bottom, rgba(8,12,24,0.3) 0%, rgba(8,12,24,0.65) 100%)",
+            }}
+          />
+
+          {/* Top accent line */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "3px",
+              background: "linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, transparent 100%)",
+            }}
+          />
+
+          {/* Content */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+              padding: "60px 72px",
+              fontFamily: "sans-serif",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "15px",
+                fontWeight: 600,
+                letterSpacing: "0.15em",
+                color: "#3b82f6",
+                textTransform: "uppercase",
+                marginBottom: "16px",
+              }}
+            >
+              BLUECORE STUDIOS
+            </span>
+            <span
+              style={{
+                fontSize: "44px",
+                fontWeight: 700,
+                color: "#f1f5f9",
+                lineHeight: 1.15,
+                marginBottom: "16px",
+              }}
+            >
+              Infrastructure for the Onchain Intelligence Era.
+            </span>
+            <span
+              style={{
+                fontSize: "20px",
+                color: "#94a3b8",
+                lineHeight: 1.5,
+                maxWidth: "780px",
+              }}
+            >
+              DeFi protocols, AI-powered risk systems, and the compliance middleware that connects them to institutional capital.
+            </span>
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630 }
+    );
+  }
 
   return new ImageResponse(
     (
