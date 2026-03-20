@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* trigger deploy */
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
